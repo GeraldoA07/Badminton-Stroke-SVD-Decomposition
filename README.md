@@ -29,8 +29,6 @@ Jalankan dari root repository:
 ```
 python -m src.run
 ```
-Perilaku:ntoh PowerShell Windows):
-
 ## Output
-- `results/metrics.csv`: fitur dan label ground-truth untuk data latih.
+- `results/metrics.csv`: fitur dan label data latih.
 - `results/predictions.csv`: file, label asli (kosong), predicted_label (perfect atau off-center).
