@@ -1,0 +1,466 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx,float}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+
+\pagestyle{fancy}
+\fancyhf{} 
+\fancyfoot[C]{Makalah IF2123 Aljabar Linier dan Geometri -- Teknik Informatika ITB -- Semester I Tahun 2025/2026}
+
+\renewcommand{\headrulewidth}{0pt} 
+\renewcommand{\footrulewidth}{0pt}
+\usepackage[colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue]{hyperref}
+
+\graphicspath{{images/}}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{\Huge {Implementation of Singular Value Decomposition for Badminton Stroke Training}}
+
+\author{
+    \IEEEauthorblockN{Geraldo Artemius - 13524005}
+    \IEEEauthorblockA{
+        \textit{Program Studi Teknik Informatika} \\
+        \textit{Sekolah Teknik Elektro dan Informatika} \\
+        Institut Teknologi Bandung, Jl. Ganesha 10 Bandung 40132, Indonesia \\
+        Email : 
+        $^1$\textit{\href{mailto:13524005@std.stei.itb.ac.id}{13524005@std.stei.itb.ac.id}}, $^2$\textit{\href{mailto:geraldoartemius2005@gmail.com}{geraldoartemius2005@gmail.com}}
+    }
+}
+
+\maketitle
+
+\thispagestyle{fancy}
+
+\begin{abstract}
+Usually badminton stroke quality is evaluated subjectively based on visual observation and experience. This paper presents an implementation of Singular Value Decomposition (SVD) to analyze badminton stroke quality using signals generated during racket and shuttlecock impact. Each audio signal was preprocessed and transformed into a time-frequency in the form of spectogram matrix. SVD is implemented to decompose the matrix into finding dominant and non-dominant components. Then, stroke quality will be quantified by analyzing the singular values obtained. A perfect hit puts most of its sound energy into one primary signal. Because of this, clean strokes have a higher ratio of dominant values, while messy hits spread their energy across many smaller and noisier signals. The results can be an effective method for analyzing badminton stroke quality in training. 
+
+Keywords—Spectogram Matrix, Singular Value Decomposition, Badminton, Stroke Quality, Signal Processing
+\end{abstract}
+
+\section{INTRODUCTION}
+Badminton is a world-wide known sport and is considered one of the most fast-paced sports, requiring proper technique and consistent stroke execution. The quality of a badminton stroke significantly affects shuttlecock speed, control, and accuracy. In training, stroke quality is commonly evaluated based on the visual observation and sound perception by coaches. Although such evaluations are effective, they remain subjective and may vary depending on individual experience.
+
+Signal processing provides an alternative approach for objective sports analysis through the use of acoustic data. In badminton, the sound created when a racket strikes a shuttlecock reflects the quality of the hit. Clean strokes tend to produce clear and consistent sounds, whereas off-center or imperfect strokes generate irregular vibrations and noise.
+
+Singular Value Decomposition (SVD) is a technique in linear algebra that has been widely applied in signal processing, data compression, and pattern recognition. SVD decomposes a matrix into dominant and non-dominant components, allowing important signal structures to be separated from noise. This makes SVD very suitable for analyzing time-frequency representations of acoustic signals.
+
+This paper aims to implement SVD to analyze badminton stroke quality based on acoustic signals. The objective of this study is to investigate whether the distribution of singular values can be used as a quantitative indicator of stroke quality. The contribution of this work lies in the application of a simple SVD-based approach using  audio data from public internet. 
+
+\section{LITERATURE REVIEW}
+\subsection{Vectors and Basic Operations}
+Vector is an object that has both magnitude and direction, and is commonly represented as an ordered list of real numbers. A vector in $\mathbb{R}^n$ is written as
+\begin{equation*}
+\mathbf{v} =
+\begin{bmatrix}
+v_1 \\ v_2 \\ \vdots \\ v_n
+\end{bmatrix}.
+\end{equation*}
+
+Vectors support several operations. Given two vectors $\mathbf{u}, \mathbf{v} \in \mathbb{R}^n$, vector addition is defined as
+\begin{equation*}
+\mathbf{u} + \mathbf{v} =
+\begin{bmatrix}
+u_1 + v_1 \\ u_2 + v_2 \\ \vdots \\ u_n + v_n
+\end{bmatrix},
+\end{equation*}
+and scalar multiplication by a real number $c$ is defined as
+\begin{equation*}
+c\mathbf{v} =
+\begin{bmatrix}
+cv_1 \\ cv_2 \\ \vdots \\ cv_n
+\end{bmatrix}.
+\end{equation*}
+
+The magnitude (or norm) of a vector $\mathbf{v}$ is given by
+\begin{equation*}
+\|\mathbf{v}\| = \sqrt{v_1^2 + v_2^2 + \cdots + v_n^2}.
+\end{equation*}
+These operations form the basis for vector projections and transformations used in eigenvalue and SVD analysis.
+
+\subsection{Matrices and Matrix Operations}
+A matrix is a list of array of real numbers arranged in rows and columns. An $m \times n$ matrix $A$ is written as
+\begin{equation*}
+A =
+\begin{bmatrix}
+a_{11} & a_{12} & \cdots & a_{1n} \\
+a_{21} & a_{22} & \cdots & a_{2n} \\
+\vdots & \vdots & \ddots & \vdots \\
+a_{m1} & a_{m2} & \cdots & a_{mn}
+\end{bmatrix}.
+\end{equation*}
+Matrix addition and scalar multiplication are defined element. Given matrices $A$ and $B$ of the same dimension and a scalar $c$,
+\begin{equation*}
+A + B = [a_{ij} + b_{ij}], \quad cA = [ca_{ij}].
+\end{equation*}
+Matrix multiplication is defined when the number of columns of $A$ equals the number of rows of $B$. For $A \in \mathbb{R}^{m \times p}$ and $B \in \mathbb{R}^{p \times n}$, the product $C = AB$ is given by
+\begin{equation*}
+c_{ij} = \sum_{k=1}^{p} a_{ik} b_{kj}.
+\end{equation*}
+
+The transpose of a matrix $A$ is denoted by $A^{T}$ and is obtained by interchanging rows and columns. These matrix operations are essential for defining eigenvalue problems and singular value decomposition.
+
+\subsection{Euclidean Distance}
+Euclidean distance is used for measuring the distance between two points in a Euclidean space. In an $n$-dimensional real vector space $\mathbb{R}^n$, the Euclidean distance between two vectors $\mathbf{x}, \mathbf{y} \in \mathbb{R}^n$ is defined as
+\begin{equation*}
+d(\mathbf{x}, \mathbf{y}) = \sqrt{\sum_{i=1}^{n} (x_i - y_i)^2}.
+\end{equation*}
+
+In this study, Euclidean distance is used to measure the similarity between the feature vector extracted from an unknown badminton stroke and the centroid of each stroke quality class. A smaller distance indicates that the stroke shares more similar structural characteristics with the corresponding class.
+
+\subsection{Eigenvalue and Eigenvector}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{vektoreigen.png}
+    \caption{Representation of Eigenvector and Eigenvalue. \footnotesize\href{https://informatika.stei.itb.ac.id/~rinaldi.munir/AljabarGeometri/2025-2026/algeo25-26.htm}{source}} 
+    \label{fig:eigenvector}
+\end{figure}
+Eigenvalues and eigenvectors are fundamental concepts before jumping into SVD. Let $A \in \mathbb{R}^{n \times n}$ be a square matrix. A non-zero vector $x \in \mathbb{R}^{n}$ is called an eigenvector of $A$ if it satisfies 
+\begin{equation*}
+Ax = \lambda x,
+\end{equation*}
+where $\lambda$ is a scalar known as the eigenvalue associated with $x$.
+
+The eigenvalues of matrix $A$ are obtained by arranging the equation into 
+\begin{equation*}
+(A - \lambda I)x = 0,     
+\end{equation*}
+where $I$ is the identity matrix. Non-trivial solutions exist if and only if $\det(A - \lambda I) = 0$. This equation is called the characteristic equation of $A$, and its roots correspond to the eigenvalues. The eigenvectors are then obtained by substituting each eigenvalue into $(A - \lambda I)x = 0$ and solving the resulting system using Gaussian elimination.
+
+\subsection{Singular Value Decomposition}
+
+Singular Value Decomposition (SVD) is a matrix factorization technique that can be applied to any real matrix $A \in \mathbb{R}^{m \times n}$, including non-square matrices. The SVD of matrix $A$ is defined as 
+\begin{equation*}
+A = U \Sigma V^{T},
+\end{equation*} 
+where $U \in \mathbb{R}^{m \times m}$ and $V \in \mathbb{R}^{n \times n}$ are orthogonal matrices, and $\Sigma \in \mathbb{R}^{m \times n}$ is a diagonal matrix containing the singular values of $A$.
+
+The singular values $\sigma_i$ are obtained from the eigenvalues of $A^{T}A$ as
+\begin{equation*}
+\sigma_i = \sqrt{\lambda_i}, \quad \lambda_i \ge 0,
+\end{equation*}
+where $\lambda_i$ are the eigenvalues of $A^{T}A$ sorted in descending order. The diagonal elements of $\Sigma$ are arranged such that
+\begin{equation*}
+\sigma_1 \ge \sigma_2 \ge \cdots \ge \sigma_k \ge 0,
+\end{equation*}
+with $k = \mathrm{rank}(A)$.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{SVD.png}
+    \caption{Singular Value Decomposition. \footnotesize\href{https://medium.com/@krasniuk-ai/the-math-behind-the-singular-value-decomposition-a847abf22fc1}{source}} 
+    \label{fig:svd}
+\end{figure}
+The columns of $U$, denoted as $\{u_1, u_2, \dots, u_k\}$, are called left singular vectors, while the columns of $V$, denoted as $\{v_1, v_2, \dots, v_k\}$, are called right singular vectors. These vectors form orthonormal bases for the column space and row space of matrix $A$.
+
+SVD enables the separation of dominant and non-dominant components of a matrix, making it particularly useful for signal processing applications such as noise reduction, feature extraction, and others. In this study, SVD is applied to time-frequency representations of acoustic signals to analyze badminton stroke quality.
+Key properties of SVD include : 
+\subsubsection{Orthogonality and Projection}
+One important property of SVD is the orthogonality of matrices $U$ and $V$. A matrix $Q$ is said to be orthogonal if
+\begin{equation*}
+Q^{T}Q = QQ^{T} = I.
+\end{equation*}
+This property ensures that the singular vectors form an orthonormal basis. As a result, any vector $x \in \mathbb{R}^n$ can be projected onto the subspace spanned by the right singular vectors as
+\begin{equation*}
+x = \sum_{i=1}^{n} (v_i^{T} x) v_i,
+\end{equation*}
+where $v_i$ are the right singular vectors forming an orthonormal basis.
+
+\subsubsection{Low-Rank Approximation}
+
+One of the most important applications of SVD is low-rank matrix approximation. Given the SVD of matrix $A$,
+\begin{equation*}
+A = \sum_{i=1}^{k} \sigma_i u_i v_i^{T},
+\end{equation*}
+a rank-$r$ approximation of $A$ can be obtained by retaining only the first $r$ dominant singular values,
+\begin{equation*}
+A_r = \sum_{i=1}^{r} \sigma_i u_i v_i^{T}, \quad r < k.
+\end{equation*}
+
+This approximation minimizes the reconstruction error in the Frobenius norm sense,
+\begin{equation*}
+\| A - A_r \|_F = \min_{\mathrm{rank}(B)=r} \| A - B \|_F,
+\end{equation*}
+making truncated SVD an optimal method for noise reduction and dimensionality reduction.
+
+\subsubsection{Energy Interpretation of Singular Values}
+
+The magnitude of each singular value $\sigma_i$ reflects the energy contribution of the corresponding singular mode. The total energy of matrix $A$ can be expressed as
+\begin{equation*}
+\| A \|_F^2 = \sum_{i=1}^{k} \sigma_i^2.
+\end{equation*}
+
+In practical applications, dominant singular values capture most of the signal energy, while smaller singular values often correspond to noise or minor variations. Therefore, the ratio between dominant singular values and the total energy can be used as an indicator of signal quality.
+
+\subsection{Frobenius Norm}
+The Frobenius norm is a widely used matrix norm that generalizes the Euclidean norm from vectors to matrices. For a matrix $A \in \mathbb{R}^{m \times n}$, the Frobenius norm is defined as
+\begin{equation*}
+\|A\|_F = \sqrt{\sum_{i=1}^{m} \sum_{j=1}^{n} a_{ij}^2}.
+\end{equation*}
+
+Frobenius norm can also be expressed using the trace operator as
+\begin{equation*}
+\|A\|_F = \sqrt{\mathrm{trace}(A^{T}A)}.
+\end{equation*}
+
+An important property of the Frobenius norm is its invariance under orthogonal transformations. If $U$ and $V$ are orthogonal matrices, then
+\begin{equation*}
+\|A\|_F = \|UAV^{T}\|_F.
+\end{equation*}
+
+When the singular value decomposition of $A$ is given by $A = U \Sigma V^{T}$, the Frobenius norm can be expressed directly in terms of its singular values as
+\begin{equation*}
+\|A\|_F^2 = \sum_{i=1}^{k} \sigma_i^2,
+\end{equation*}
+where $\sigma_i$ are the singular values of $A$ and $k = \mathrm{rank}(A)$.
+
+\subsection{Audio Signal Representation}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{soundrepresentation.png}
+    \caption{Audio Signal Graphical Representation. \footnotesize\href{https://www.researchgate.net/figure/Graphical-Representation-of-Audio-Signal_fig7_229157070}{source}}
+    \label{fig:audio-signal-representation}
+\end{figure}
+A badminton stroke produces an acoustic signal that can be represented as a discrete-time signal
+\begin{equation*}
+x[n], \quad n = 1, 2, \dots, N,
+\end{equation*}
+where $x[n]$ denotes the audio amplitude at time index $n$. This signal can be viewed as a vector in $\mathbb{R}^{N}$.
+
+However, a time domain representation lacks frequency information, which is crucial for identifying the unique vibration patterns of the impact. Therefore, the signal will be transformed into a time-frequency matrix representation using the Short-Time Fourier Transform (STFT).
+
+The STFT produces a matrix
+\begin{equation*}
+A \in \mathbb{R}^{F \times T},
+\end{equation*}
+where $F$ denotes the number of frequency bins and $T$ denotes the number of time frames. Each element $a_{ij}$ represents the magnitude of frequency component $i$ at time frame $j$.
+
+\subsection{Short-Time Fourier Transform}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{STFT.png}
+    \caption{Short-Time Fourier Transform. \footnotesize\href{https://en.wikipedia.org/wiki/Short-time_Fourier_transform}{source}}
+    \label{fig:stft}
+\end{figure}
+
+The Short-Time Fourier Transform (STFT) is used to analyze the frequency of a signal over time. Given an audio signal $x[n]$, the STFT is defined as
+\begin{equation*}
+X(m, k) = \sum_{n=-\infty}^{\infty} x[n] \, w[n - m] \, e^{-j 2 \pi k n / N},
+\end{equation*}
+where $w[n]$ is a window function centered at time index $m$, $k$ denotes the frequency index, and $N$ is the window length.
+
+The STFT divides the signal into overlapping frames using a sliding window and computes the Fourier transform for each frame. As a result, the signal is represented in the time-frequency domain. This time-frequency matrix will be the input matrix for Singular Value Decomposition.
+
+\section{METHODOLOGY}
+
+\subsection{System Overview, Programming Language, and Tools}
+The implementation of this project is developed using the Python programming language.
+Python is chosen due to its simplicity, readability, and collection of libraries that support numerical computation and signal processing.
+
+Several open-source libraries are used in this project. The NumPy library is used for
+efficient numerical operations, matrix manipulation, and the implementation of Singular
+Value Decomposition. Librosa is employed for audio signal processing tasks, including
+audio loading, resampling, time-frequency analysis, and feature extraction. Additionally,
+the SoundFile library is used particularly for reading waveform data in $\mathrm{.wav}$ format.
+
+The system is designed to transforms raw sound recordings into numerical representations. Each audio file is first processed to extract a normalized impact segment, followed by a time-frequency representation using the Short-Time Fourier Transform (STFT). The resulting spectrogram is then decomposed using Singular Value Decomposition to obtain features from the signal.
+
+The final output of the system consists of structured feature values and classification results stored in comma-separated value (CSV) files, enabling quantitative comparison between perfect hits and off-center hits.
+
+\subsection{Data Collection}
+In this section, we focus on finding the right and specific sound of a perfect hit in badminton stroke. The audio data used in this paper were collected from publicly available online source, primarily youtube. The recording consists of acoustic signals from badminton racket and shuttlecock impact sounds. Each audio only consists of single stroke event. 
+
+The audios were divided into two groups, which are perfect hits and off-center hits. Perfect hits refer to strokes in which the shuttlecock is struck near the sweet spot of the racket, they tend to produce clear and consistent sound. Off-center hits refer to strokes with irregular impact, producing a much more noisier and less stable acoustic characteristics. Due to the lack of off-center records in public media, off-center samples are identified based on auditory characteristics such as reduced loudness consistency, increased noise components, and irregular frequency content. 
+
+The collected audios are organized into two separate directories, namely $\mathrm{perfect\_hit/}$ dan $\mathrm{offcenter\_hit/}$, and $\mathrm{unknown/}$, as illustrated in \textit{Figure 5}. This directories are implemented in the source code. 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\linewidth]{images/dataaudio.png}
+    \caption{Perfect Hit, Off-Center, and Unknown Audio Sounds. \footnotesize{source : Writer's own code}}
+    \label{fig:audio-sounds}
+\end{figure}
+
+\subsection{Preprocessing}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.78\linewidth]{images/preprocessing.png}
+    \caption{Preprocessing Source Code. \footnotesize{source : Writer's own code}}
+    \label{fig:preprocessing}
+\end{figure}
+
+Each audio signal is converted into a monophonic waveform and resampled to a 
+uniform sampling rate of 44.1 kHz for consistency. To focus only on the impact, the author extract (cut) a small part of the audio around the peak RMS energy of the signal. 
+
+Let $y[n]$ denote the audio waveform. The RMS envelope is defined as
+\begin{equation*}
+\mathrm{RMS}(k) = \sqrt{\frac{1}{N}\sum_{n=0}^{N-1} y^2[n + kH]},
+\end{equation*}
+where $N$ is the frame length and $H$ is the hop size.
+
+A fixed-length segment centered around the maximum RMS value is extracted and normalized
+to unit peak amplitude.
+
+\subsection{Time-Frequency Representation}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{stft.png}
+    \caption{STFT implementation. \footnotesize{source : Writer's own code}}
+    \label{fig:stft-code}
+\end{figure}
+To capture the spectral characteristics of the impact sound, the Short-Time Fourier Transform (STFT) is applied to each segment that were preprocessed.
+
+The STFT of signal $y[n]$ is given by
+\begin{equation}
+X(f,t) = \sum_{n} y[n]w[n-tH]e^{-j2\pi fn},
+\end{equation}
+where $w[n]$ is a Hann window and $H$ is the hop length.
+
+The magnitude spectrogram $S = |X|$ is further compressed using a logarithmic mapping:
+\begin{equation}
+S = \log(1 + |X|).
+\end{equation}
+The result will be the matrix representation of the audio signal.
+
+In this implementation, a Hann window is used with an FFT size of 1024 samples and a hop length of 256 samples. These parameters provide a balance between time and frequency resolution, which is suitable for capturing the characteristics of racket and shuttlecock impacts.
+
+\subsection{Singular Value Decomposition and Feature Extraction}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\linewidth]{svdcode.png}
+    \caption{Singular Value Decomposition and Feature Extraction. \footnotesize{source : Writer's own code}}
+    \label{fig:svd-code}
+\end{figure}
+
+After extracting singular values from the spectrogram matrix, several features
+are computed to characterize the structure of the signal. These features are designed
+to quantify how concentrated or dispersed the energy of the impact sound is in the
+singular value domain.
+
+Let $\sigma_i$ denote the $i$-th singular value of the spectrogram matrix. The dominant
+ratio is defined as
+\begin{equation}
+D = \frac{\sigma_1}{\sum_{i} \sigma_i},
+\end{equation}
+which measures the dominance of the strongest singular component.
+
+The cumulative energy ratio using the first $r$ singular values is defined as
+\begin{equation}
+E_r = \frac{\sum_{i=1}^{r} \sigma_i^2}{\sum_{i} \sigma_i^2}.
+\end{equation}
+In this study, $r = 1$ and $r = 3$ are used to analyze low-rank energy concentration.
+
+To evaluate the approximation quality of a low-rank representation, the Frobenius
+reconstruction error is computed as
+\begin{equation}
+\epsilon_r = \sqrt{\sum_{i=r+1}^{k} \sigma_i^2},
+\end{equation}
+where $k$ is the number of singular values.
+
+Finally, the spread of singular values is measured by computing the variance of
+normalized singular values,
+\begin{equation}
+S = \frac{1}{k} \sum_{i=1}^{k} (\tilde{\sigma}_i - \mu)^2,
+\end{equation}
+where $\tilde{\sigma}_i = \sigma_i / \sum_j \sigma_j$ and $\mu$ is their mean.
+
+These features are computed for each audio sample and stored in a structured CSV file
+for further analysis.
+
+\subsection{Stroke Classification}
+To make an automatic identification of a stroke quality, feature vectors extracted from labeled samples (perfect and off-center hits) are first normalized using z-score normalization.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{images/classify.png}
+    \caption{Features Classification. \footnotesize{source : Writer's own code}}
+    \label{fig:feature-classification}
+\end{figure}
+
+Let $\mathbf{x}$ be a feature vector and $\mu, \sigma$ be the mean and standard deviation
+computed from the training data. The normalized feature vector is given by
+\begin{equation*}
+\mathbf{z} = \frac{\mathbf{x} - \mu}{\sigma}.
+\end{equation*}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{images/outputclassification.png}
+    \caption{Output Classification Implementation}
+    \label{fig:output-classification}
+\end{figure}
+
+For each class, a centroid is computed as the mean of normalized feature vectors for the class. Given an unknown sample, its normalized feature vector is compared to each
+class centroid using Euclidean Distance.
+
+\section{RESULTS AND DISCUSSION}
+\subsection{Perfect and Off-Center Hits Characteristics}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{metrics.png}
+    \caption{Perfect and Off-Center Audio Result. \footnotesize{source : Writer's own code}}
+    \label{fig:metrics}
+\end{figure}
+From the results in $\mathrm{metrics.csv}$, perfect hits samples has a higher dominant singular value ratio, which indicates a large proportion of signal energy is extracted on the first singular value. Even though there's not much difference between the two categories, due to the lack and hard collection of data audios. But we can conclude off-center hit tend to have lower dominant ratios and higher Frobenius reconstruction errors. 
+
+Dominant Ratios Interval Classification :
+\begin{itemize}
+    \item Perfect hit : $85 \le \mathrm{Dominant~Ratio}\le90$.
+    \item Off-Center hit : $85\le \mathrm{Dominant~Ratio\le87}$.
+\end{itemize}
+
+\subsection{Unknown Audio Classification}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{images/prediction.png}
+    \caption{Unknown Audio Classification Result. \footnotesize{source : Writer's own code}}
+    \label{fig:prediction}
+\end{figure}
+The system is able to correctly analyze between perfect hits and off-center hits for previously unseen/unclassified audio samples.
+
+The file \textit{unknown-1.wav} is classified as a perfect hit with a relatively small distance value. This prediction is consistent because the audio was sourced from a publicly available video containing a clean and perfect badminton stroke. 
+
+The file \textit{unknown-2.wav} is classified as an off-center hit with a larger distance from the perfect hit centroid. This result is also correct because the audio corresponds to a racket frame impact, which produces a noisier and less stable acoustic response. 
+
+\section{CONCLUSION}
+This paper shows that Singular Value Decomposition (SVD) can be used to analyze a badminton stroke quality based on the impact sound signals. By applying SVD to the spectogram of each audio sample, the difference between perfect hits and off-center hits can be seen from the distribution of singular values. Perfect hits tend to concentrate more energy in the dominant singular values than off-center hits. Although the audio samples are limited, the results indicate that SVD-based features can provide a simple and effective approach for badminton stroke quality analysis. This paper's purpose is to improve a person's badminton stroke from being inconsistent to being consistent in executing perfect hit. 
+
+\section{APPENDIX}
+GitHub : \href{https://github.com/GeraldoA07/Badminton-Stroke-SVD-Decomposition}{https://github.com/GeraldoA07/Badminton-Stroke-SVD-Decomposition}
+
+
+\section{ACKNOWLEDGMENT}
+The writer would like to express sincere gratitude to Dr. Ir. Rinaldi Munir, M.T., for his dedication in teaching \textit{Linear Algebra and Geometri} for K-1 throughout the third semester. The writer also appreciates the support and encouragement from their family and friends during the completion of this paper. Lastly, the writer gives thanks to God for His grace, and strength throughout this journey. The writer also acknowledges the use of AI tools, which assisted in grammar correction, generating content ideas, and implementing source code.
+
+\begin{thebibliography}{00}
+\bibitem{b1} R. Munir, ``Aljabar Geometri 2025-2026,'' Sekolah Teknik Elektro dan Informatika, Institut Teknologi Bandung. [Online]. Available: \url{https://informatika.stei.itb.ac.id/~rinaldi.munir/AljabarGeometri/2025-2026/algeo25-26.htm}. [Accessed: Dec. 23, 2025].
+
+\bibitem{b2} F. Ruan, ``Analisis Komponen Utama,'' 2025. Available: \url{https://www.fanruan.com/id/glossary/analisis-data/Analisis-Komponen-Utama}. [Accessed: Dec. 23, 2025].
+
+\bibitem{b3} NumPy Developers, ``NumPy,''. Available: \url{https://numpy.org/}. [Accessed: Dec. 24, 2025].
+
+\bibitem{b4} S. Sekhar Bhakta, ``Audio classification using spectrograms,'' GeeksforGeeks, Jul. 23, 2025. Available: \url{https://www.geeksforgeeks.org/nlp/audio-classification-using-spectrograms/}. [Accessed: Dec. 24, 2025].
+
+\bibitem{b5} E. W. Weisstein, ``Frobenius Norm,'' Wolfram MathWorld. [Online]. Available: \url{https://mathworld.wolfram.com/FrobeniusNorm.html}. [Accessed: Dec. 23, 2025].
+\end{thebibliography}
+
+
+\section*{STATEMENT OF ORIGINALITY}
+I hereby declare that the paper I have written is my own original work, not an adaptation or translation of someone else’s work, and not an act of plagiarism. 
+
+\begin{flushright}
+Bandung, 24 December 2025
+
+\includegraphics[width=0.4\linewidth]{images/ttd.png}
+
+Geraldo Artemius \\
+13524005
+\end{flushright}
+
+\end{document}
