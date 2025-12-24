@@ -23,7 +23,7 @@ FEATURE_KEYS = [
 ]
 
 
-def _compute_feature_row(seg, sr, nFFT, hop, toDB, label=None, fname=None):
+def computeFeatureRow(seg, sr, nFFT, hop, toDB, label=None, fname=None):
     S = computeSpectogram(seg, sr, nFFT, hop, toDB=toDB)
     _, s, _ = computeSVD(S, full=False)
     row = {
@@ -44,13 +44,13 @@ def analyzeDir(dir, output, label, sr=44100, nFFT=1024, hop=256, toDB=False):
     files = sorted([os.path.join(dir, f) for f in os.listdir(dir) if f.lower().endswith('.wav')])
     for fpath in tqdm(files, desc=f'Analyzing {label}'):
         seg, sr = preprocessWav(fpath, sr)
-        row = _compute_feature_row(seg, sr, nFFT, hop, toDB, label=label, fname=os.path.basename(fpath))
+        row = computeFeatureRow(seg, sr, nFFT, hop, toDB, label=label, fname=os.path.basename(fpath))
         rows.append(row)
-    _write_rows(output, rows)
+    writeRows(output, rows)
     return rows
 
 
-def _write_rows(output, rows):
+def writeRows(output, rows):
     if not rows:
         return
     writeHeader = not os.path.exists(output)
@@ -70,7 +70,7 @@ def run(dataRoot ='data', outputCSV='results/metrics.csv'):
     return perfect + off
 
 
-def fit_centroid_classifier(rows):
+def fitCentroid(rows):
     if not rows:
         raise ValueError('No rows provided to train classifier')
     data = np.array([[r[k] for k in FEATURE_KEYS] for r in rows], dtype=np.float64)
@@ -85,17 +85,17 @@ def fit_centroid_classifier(rows):
     return {'mean': mean, 'std': std, 'centroids': centroids}
 
 
-def classify_features(row, stats):
+def classifyFeatures(row, stats):
     feats = np.array([row[k] for k in FEATURE_KEYS], dtype=np.float64)
     z = (feats - stats['mean']) / stats['std']
-    best_label = None
-    best_dist = None
+    bestLabel = None
+    bestDist = None
     for label, center in stats['centroids'].items():
         dist = np.linalg.norm(z - center)
-        if best_dist is None or dist < best_dist:
-            best_dist = dist
-            best_label = label
-    return best_label, best_dist
+        if bestDist is None or dist < bestDist:
+            bestDist = dist
+            bestLabel = label
+    return bestLabel, bestDist
 
 
 def classifyDir(dir, stats, predOutput='results/predictions.csv', sr=44100, nFFT=1024, hop=256, toDB=False):
@@ -105,8 +105,8 @@ def classifyDir(dir, stats, predOutput='results/predictions.csv', sr=44100, nFFT
     files = sorted([os.path.join(dir, f) for f in os.listdir(dir) if f.lower().endswith('.wav')])
     for fpath in tqdm(files, desc='Classifying unknown'):
         seg, sr = preprocessWav(fpath, sr)
-        row = _compute_feature_row(seg, sr, nFFT, hop, toDB, label='', fname=os.path.basename(fpath))
-        pred, dist = classify_features(row, stats)
+        row = computeFeatureRow(seg, sr, nFFT, hop, toDB, label='', fname=os.path.basename(fpath))
+        pred, dist = classifyFeatures(row, stats)
         row['predicted_label'] = pred
         row['distance'] = float(dist)
         rows.append(row)
@@ -122,9 +122,9 @@ def classifyDir(dir, stats, predOutput='results/predictions.csv', sr=44100, nFFT
     return rows
 
 
-def run_with_classifier(dataRoot='data', outputCSV='results/metrics.csv', classifyDirPath=None, predOutput='results/predictions.csv'):
+def runWithClassifier(dataRoot='data', outputCSV='results/metrics.csv', classifyDirPath=None, predOutput='results/predictions.csv'):
     rows = run(dataRoot=dataRoot, outputCSV=outputCSV)
-    stats = fit_centroid_classifier(rows)
+    stats = fitCentroid(rows)
     if classifyDirPath:
         classifyDir(classifyDirPath, stats, predOutput=predOutput)
     return rows, stats
